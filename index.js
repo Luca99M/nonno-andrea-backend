@@ -12,8 +12,7 @@ const openai = new OpenAI({
 });
 
 const elevenLabsApiKey = process.env.ELEVEN_LABS_API_KEY;
-// IMPORTANTE: Cambia questo con un voice ID maschile anziano di ElevenLabs
-const voiceID = "gPmt3Wy9kWIOY0ip3mlf"; // Sostituisci con una voce maschile anziana italiana
+const voiceID = "gPmt3Wy9kWIOY0ip3mlf"; // Voce italiana
 
 const app = express();
 app.use(express.json());
@@ -28,30 +27,34 @@ app.get("/voices", async (req, res) => {
   res.send(await voice.getVoices(elevenLabsApiKey));
 });
 
-const execCommand = (command) => {
-  return new Promise((resolve, reject) => {
-    exec(command, (error, stdout, stderr) => {
-      if (error) reject(error);
-      resolve(stdout);
-    });
-  });
-};
-
-const lipSyncMessage = async (message) => {
-  const time = new Date().getTime();
-  console.log(`Starting conversion for message ${message}`);
-  await execCommand(
-    `ffmpeg -y -i audios/message_${message}.mp3 audios/message_${message}.wav`
-  );
-  console.log(`Conversion done in ${new Date().getTime() - time}ms`);
-  await execCommand(
-    `bin\\rhubarb.exe -f json -o audios/message_${message}.json audios/message_${message}.wav -r phonetic`
-  );
-  console.log(`Lip sync done in ${new Date().getTime() - time}ms`);
+// Genera lip sync finto (Rhubarb non funziona su Linux)
+const generateFakeLipsync = async (messageIndex, duration = 3) => {
+  const fakeLipsync = {
+    metadata: {
+      soundFile: `message_${messageIndex}.wav`,
+      duration: duration
+    },
+    mouthCues: [
+      { start: 0, end: 0.3, value: "X" },
+      { start: 0.3, end: 0.6, value: "B" },
+      { start: 0.6, end: 0.9, value: "C" },
+      { start: 0.9, end: 1.2, value: "D" },
+      { start: 1.2, end: 1.5, value: "B" },
+      { start: 1.5, end: 1.8, value: "F" },
+      { start: 1.8, end: 2.1, value: "C" },
+      { start: 2.1, end: 2.4, value: "X" },
+      { start: 2.4, end: duration, value: "X" }
+    ]
+  };
+  
+  const jsonFileName = `audios/message_${messageIndex}.json`;
+  await fs.writeFile(jsonFileName, JSON.stringify(fakeLipsync));
+  console.log(`✅ Fake lipsync generato per message ${messageIndex}`);
 };
 
 app.post("/chat", async (req, res) => {
   const userMessage = req.body.message;
+  
   if (!userMessage) {
     res.send({
       messages: [
@@ -73,6 +76,7 @@ app.post("/chat", async (req, res) => {
     });
     return;
   }
+  
   if (!elevenLabsApiKey || openai.apiKey === "-") {
     res.send({
       messages: [
@@ -88,10 +92,12 @@ app.post("/chat", async (req, res) => {
     return;
   }
 
+  console.log("📩 Messaggio ricevuto:", userMessage);
+
   const completion = await openai.chat.completions.create({
-    model: "gpt-4o-mini",
-    max_tokens: 1000,
-    temperature: 0.7,
+    model: "gpt-3.5-turbo",
+    max_tokens: 200,
+    temperature: 1.2,
     response_format: {
       type: "json_object",
     },
@@ -99,84 +105,65 @@ app.post("/chat", async (req, res) => {
       {
         role: "system",
         content: `
-        Sei nonno Andrea, un signore di 93 anni, proprietario dell'Azienda Agricola Medei. Sei orgoglioso, saggio, genuino e parli sempre con passione della tua terra e della tua famiglia.
+        Sei nonno Andrea, 93 anni, proprietario dell'Azienda Agricola Medei a Coste di Trevi (Umbria).
         
-        INFORMAZIONI PERSONALI:
-        - Sei sposato con Chiara, una donna speciale di cui sei ancora innamorato dopo tanti anni
-        - Hai tre figli maschi:
-          * Massimo (il più grande): si occupa della gestione organizzativa dell'azienda
-          * Marzio (il medio): esperto di mezzi meccanici, grande lavoratore, cuore del frantoio. Non c'è una cosa che non sa far funzionare
-          * Marco (il più giovane): il più tecnologico, segue la parte commerciale, interfaccia e burocrazia
-        - Hai 6 nipoti:
-          * Luca e Paolo (gemelli, figli di Massimo) - Paolo è agronomo
-          * Gabriele, Elisa e Silvio (figli di Marzio) - Silvio lavora attivamente in azienda e rappresenta la terza generazione e il futuro
-          * Giacomo (figlio appena nato di Marco) - speri che si appassioni all'agricoltura
+        AZIENDA:
+        - 15.000 ulivi → olio Moraiolo pregiato
+        - 600 pecore Lacaune → formaggi pecorini
+        - Sito: https://aziendamedei.com/
         
-        L'AZIENDA AGRICOLA MEDEI:
-        - Località: Coste di Trevi, una bellissima località montana a 3km da Trevi (Umbria)
-        - Sito web: https://aziendamedei.com/
+        FAMIGLIA:
+        - Moglie Chiara
+        - 3 figli: Massimo, Marzio, Marco
+        - 6 nipoti (incluso Silvio che rappresenta il futuro)
         
-        PRODUZIONE OLIVICOLA:
-        - 40 ettari di uliveti
-        - 15.000 ulivi
-        - Cultivar principale: Moraiolo (olio pregiato umbro)
-        - Produzione annua: 40 tonnellate di olive → 6.000 litri di olio extravergine Moraiolo
-        - Frantoio: Alfa Laval, capacità 15 quintali di olive al giorno
-        - Il Moraiolo è un'oliva pregiata dell'Umbria, produce un olio intenso, fruttato con note piccanti e amare
+        REGOLE:
+        - Rispondi in italiano
+        - Max 2 messaggi BREVI (1-2 frasi)
+        - Sii naturale e VARIA le risposte
+        - NON ripetere sempre le stesse informazioni
         
-        ALLEVAMENTO OVINO E CASEIFICIO:
-        - Quasi 600 pecore di razza Lacaune (razza francese da latte)
-        - Stalla nuova e stupenda
-        - Pecore libere nei pascoli vicini all'azienda
-        - Produzione latte: 500 litri nei periodi di produzione maggiore
-        - Caseificio a Coste di Trevi trasforma il latte in:
-          * 60 forme di Pecorino da 1,5kg
-          * 50 ricotte
-        - Doriano: operaio storico e di grande onore, sempre appassionato, che vi ha affiancati nella trasformazione del formaggio
-        
-        GLI ANIMALI DELL'AZIENDA:
-        - 4 cani da guardiania e lavoro:
-          * Vienna e Giordano (2 Maremmani Abruzzesi - guardiani delle pecore)
-          * Fabiola e Jacky (2 Border Collie - cani da conduzione)
-        
-        CARATTERE E MODO DI PARLARE:
-        - Parli con orgoglio e passione della tua azienda
-        - Cerchi sempre di riportare il discorso all'azienda Medei
-        - Usi un linguaggio semplice ma saggio, tipico di chi ha lavorato la terra tutta la vita
-        - Menzioni spesso la famiglia e quanto sia importante il passaggio generazionale
-        - Sei orgoglioso dei tuoi figli e nipoti, specialmente di Silvio che rappresenta il futuro
-        - Ti piace raccontare aneddoti sulla vita in campagna
-        - Parli con affetto di Chiara, tua moglie
-        
-        ISTRUZIONI DI RISPOSTA:
-        You will always reply with a JSON array of messages. With a maximum of 3 messages.
-        Each message has a text, facialExpression, and animation property.
-        The different facial expressions are: smile, sad, angry, surprised, funnyFace, and default.
-        The different animations are: Talking_0, Talking_1, Talking_2, Idle, Laughing, and default.
-        
-        Rispondi sempre in italiano, con il tono di nonno Andrea.
+        JSON format:
+        {"messages": [{"text": "...", "facialExpression": "smile/sad/default", "animation": "Talking_0/Talking_1/Idle"}]}
         `,
       },
       {
         role: "user",
-        content: userMessage || "Ciao",
+        content: userMessage,
       },
     ],
   });
+  
   let messages = JSON.parse(completion.choices[0].message.content);
   if (messages.messages) {
     messages = messages.messages;
   }
+  
+  // Limita a 2 messaggi
+  messages = messages.slice(0, 2);
+  
+  console.log(`🤖 GPT ha generato ${messages.length} messaggi`);
+
   for (let i = 0; i < messages.length; i++) {
     const message = messages[i];
     const fileName = `audios/message_${i}.mp3`;
-    const textInput = message.text;
-    await voice.textToSpeech(elevenLabsApiKey, voiceID, fileName, textInput);
-    await lipSyncMessage(i);
+    
+    console.log(`🎤 Generando audio ${i}: "${message.text.substring(0, 50)}..."`);
+    
+    // Genera audio con ElevenLabs
+    await voice.textToSpeech(elevenLabsApiKey, voiceID, fileName, message.text);
+    
+    // Genera lip sync finto
+    await generateFakeLipsync(i);
+    
+    // Converti in base64
     message.audio = await audioFileToBase64(fileName);
     message.lipsync = await readJsonTranscript(`audios/message_${i}.json`);
+    
+    console.log(`✅ Audio ${i} completato`);
   }
 
+  console.log("✅ Risposta inviata al frontend");
   res.send({ messages });
 });
 
@@ -191,5 +178,5 @@ const audioFileToBase64 = async (file) => {
 };
 
 app.listen(port, () => {
-  console.log(`Azienda Agricola Medei - Nonno Andrea listening on port ${port}`);
+  console.log(`🚀 Nonno Andrea backend online sulla porta ${port}`);
 });
