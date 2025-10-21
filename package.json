@@ -1,0 +1,26 @@
+{
+  "name": "nonno-andrea-backend",
+  "version": "1.0.0",
+  "description": "Backend per Nonno Andrea - Azienda Agricola Medei",
+  "main": "index.js",
+  "type": "module",
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "scripts": {
+    "start": "node index.js",
+    "dev": "nodemon index.js --ext js"
+  },
+  "author": "Luca Medei",
+  "license": "MIT",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "dotenv": "^16.3.1",
+    "elevenlabs-node": "^1.2.0",
+    "express": "^4.18.2",
+    "openai": "^4.26.0"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.10"
+  }
+}
