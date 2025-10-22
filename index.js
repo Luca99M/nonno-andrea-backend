@@ -245,12 +245,6 @@ const detectTopic = (message) => {
   return 'generale';
 };
 
-const shouldShowVideo = (message) => {
-  const msg = message.toLowerCase();
-  return msg.match(/\b(video|mostra|vedere|guarda|show|watch|tour|visita|frantoio|pecore|azienda|campo)\b/);
-};
-
-
 app.post("/chat", async (req, res) => {
   const userMessage = req.body.message;
   
@@ -326,18 +320,12 @@ JSON format: {"messages":[{"text":"tua risposta","facialExpression":"smile/sad/d
   
   console.log(`🤖 Risposta: "${messages[0].text}"`);
 
-  if (shouldShowVideo(userMessage)) {
-    console.log("🎬 Richiesta video rilevata!");
-    messages[0].showVideo = true;
-    messages[0].videoFile = "https://www.youtube.com/watch?v=Sqd_qmaG-ao";
-  }
-
   for (let i = 0; i < messages.length; i++) {
     const message = messages[i];
     const fileName = `audios/message_${i}.mp3`;
     
     await voice.textToSpeech(elevenLabsApiKey, voiceID, fileName, message.text);
-    await generateFakeLipsync(i, message.text);
+    await generateFakeLipsync(i);
     
     message.audio = await audioFileToBase64(fileName);
     message.lipsync = await readJsonTranscript(`audios/message_${i}.json`);
