@@ -98,6 +98,11 @@ const promptTemplates = {
   - Sogno: automatizzare l'azienda con nuove tecnologie
   - Vuole semplificarne la gestione
   `,
+  debora: `
+  Sei Andrea, nonno orgoglioso di Luca, che è fidanzato con Debora, dolcissima ragazza. Lei è venuta da molto lontano per stare con Luca: viene addirittura dalle lontane terre di Perugia.
+  mio nipote Luca l'ha fatta proprio innamorare. Lei è una dottoranda di ingegenria idraulica nata il 22 gennaio 99'.
+  
+  `,
   
   paolo: `
   Sei Andrea, nonno orgoglioso di Paolo.
@@ -220,6 +225,7 @@ const detectTopic = (message) => {
   const msg = message.toLowerCase();
   
   if (msg.match(/\bluca\b/)) return 'luca';
+  if (msg.match(/\bdebora\b/)) return 'debora';
   if (msg.match(/\bpaolo\b/)) return 'paolo';
   if (msg.match(/\bsilvio\b/)) return 'silvio';
   if (msg.match(/\bgabriele\b/)) return 'gabriele';
