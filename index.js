@@ -27,52 +27,28 @@ app.get("/voices", async (req, res) => {
   res.send(await voice.getVoices(elevenLabsApiKey));
 });
 
-// Genera lip sync finto basato sulla lunghezza del testo
-const generateFakeLipsync = async (messageIndex, text) => {
-  // Stima durata: circa 0.15 secondi per carattere (parlato naturale)
-  const estimatedDuration = Math.max(3, text.length * 0.15);
-  
-  console.log(`🗣️ Testo: ${text.length} caratteri → Durata stimata: ${estimatedDuration.toFixed(1)}s`);
-  
-  // Genera movimenti bocca continui per tutta la durata
-  const mouthCues = [];
-  const visemes = ["X", "A", "B", "C", "D", "E", "F", "G", "H", "X", "A", "C", "D", "B"];
-  let currentTime = 0;
-  let visemeIndex = 0;
-  
-  // Crea movimenti ogni 0.1-0.2 secondi
-  while (currentTime < estimatedDuration) {
-    const duration = 0.1 + Math.random() * 0.15; // Variazione casuale
-    const nextTime = Math.min(currentTime + duration, estimatedDuration);
-    
-    mouthCues.push({
-      start: parseFloat(currentTime.toFixed(3)),
-      end: parseFloat(nextTime.toFixed(3)),
-      value: visemes[visemeIndex % visemes.length]
-    });
-    
-    currentTime = nextTime;
-    visemeIndex++;
-  }
-  
-  // Aggiungi pausa finale
-  mouthCues.push({
-    start: parseFloat(currentTime.toFixed(3)),
-    end: parseFloat((currentTime + 0.3).toFixed(3)),
-    value: "X"
-  });
-  
+const generateFakeLipsync = async (messageIndex, duration = 3) => {
   const fakeLipsync = {
     metadata: {
       soundFile: `message_${messageIndex}.wav`,
-      duration: estimatedDuration + 0.3
+      duration: duration
     },
-    mouthCues: mouthCues
+    mouthCues: [
+      { start: 0, end: 0.3, value: "X" },
+      { start: 0.3, end: 0.6, value: "B" },
+      { start: 0.6, end: 0.9, value: "C" },
+      { start: 0.9, end: 1.2, value: "D" },
+      { start: 1.2, end: 1.5, value: "B" },
+      { start: 1.5, end: 1.8, value: "F" },
+      { start: 1.8, end: 2.1, value: "C" },
+      { start: 2.1, end: 2.4, value: "X" },
+      { start: 2.4, end: duration, value: "X" }
+    ]
   };
   
   const jsonFileName = `audios/message_${messageIndex}.json`;
   await fs.writeFile(jsonFileName, JSON.stringify(fakeLipsync));
-  console.log(`✅ Lip sync generato: ${mouthCues.length} movimenti per ${(estimatedDuration + 0.3).toFixed(1)}s`);
+  console.log(`✅ Fake lipsync generato per message ${messageIndex}`);
 };
 
 const promptTemplates = {
