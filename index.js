@@ -221,7 +221,7 @@ const promptTemplates = {
   `,
   
   generale: `
-  devi dire: Eh no, caro amico! Le tue frasi mi sono piaciute, ma quest’ultima proprio no! Noi contadini siamo duri e tenaci… e anche a questo problema abbiamo trovato una soluzione!
+  Pensa a tutti i modi in cui potrei arricchire le aziende agricole! Potrei essere nelle piazze dei comuni, servire i turisti a costi praticamente nulli, oppure negli agriturismi per raccontare la loro organizzazione. Potrei anche entrare nelle scuole, insegnare ai bambini e farli divertire! Le possibilità sono davvero infinite. Che ne dici, vieni con me in questa avventura?”
   `
 };
 
