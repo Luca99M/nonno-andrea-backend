@@ -12,7 +12,7 @@ const openai = new OpenAI({
 });
 
 const elevenLabsApiKey = process.env.ELEVEN_LABS_API_KEY;
-const voiceID = "gPmt3Wy9kWIOY0ip3mlf";
+const voiceID = "f4RRAODV3F8JOzxzpVXb";
 
 const app = express();
 app.use(express.json());
