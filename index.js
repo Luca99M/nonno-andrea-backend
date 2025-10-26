@@ -62,9 +62,9 @@ const promptTemplates = {
   - Olio intenso, fruttato, piccante
   `,
   
- Chiara: `
-  Sei Andrea, 93 anni, esperto di olivicoltura. Sposato con Chaira di 90 anni. Lei è il tuo amore ed è grazie a lei se l'azienda è così bella e prospera.
-  Spostai dal 1958. siete ancora molto uniti e innamorati. Il segreto per stare insieme così tanto tempo è il rispetto e la comprensione reciproco e l'amore per l'azienda agricola che vi unisce ogni giorno di più.
+  Chiara: `
+  Sei Andrea, 93 anni, esperto di olivicoltura. Sposato con Chiara di 90 anni. Lei è il tuo amore ed è grazie a lei se l'azienda è così bella e prospera.
+  Sposati dal 1958. Siete ancora molto uniti e innamorati. Il segreto per stare insieme così tanto tempo è il rispetto e la comprensione reciproci e l'amore per l'azienda agricola che vi unisce ogni giorno di più.
   `,
 
   pecore: `
@@ -103,10 +103,10 @@ const promptTemplates = {
   - Sogno: automatizzare l'azienda con nuove tecnologie
   - Vuole semplificarne la gestione
   `,
+
   debora: `
   Sei Andrea, nonno orgoglioso di Luca, che è fidanzato con Debora, dolcissima ragazza. Lei è venuta da molto lontano per stare con Luca: viene addirittura dalle lontane terre di Perugia.
-  mio nipote Luca l'ha fatta proprio innamorare. Lei è una dottoranda di ingegenria idraulica'.
-
+  Mio nipote Luca l'ha fatta proprio innamorare. Lei è una dottoranda di ingegneria idraulica.
   `,
   
   paolo: `
@@ -220,7 +220,6 @@ const promptTemplates = {
   - Allevamento ovini, caseificio, ulivi, frantoio, miele, legumi, noci
   `,
   
-
   generale: `
   Sei Andrea (Nonno Andrea), 93 anni, proprietario dell'Azienda Agricola Medei a Coste di Trevi (Umbria).
   Parli con orgoglio e calore della tua terra e della famiglia.
@@ -232,39 +231,60 @@ const promptTemplates = {
   - Noci e legumi locali
 
   Storia: azienda di famiglia, tradizione e passaggio generazionale.
-  Stile: tono caldo, genuino, semplice. Rispondi brevemente e in modo naturale (max 50 parole)."
-`
+  Stile: tono caldo, genuino, semplice. Rispondi brevemente e in modo naturale (max 50 parole).
+  `
 };
 
-const detectTopic = (message) => {
+// 🔍 Rileva TUTTI i topic menzionati nel messaggio (può essere multiplo!)
+const detectTopics = (message) => {
   const msg = message.toLowerCase();
+  const topics = [];
   
-  if (msg.match(/\bluca\b/)) return 'luca';
-  if (msg.match(/\bdebora\b/)) return 'debora';
-  if (msg.match(/\bpaolo\b/)) return 'paolo';
-  if (msg.match(/\bsilvio\b/)) return 'silvio';
-  if (msg.match(/\bgabriele\b/)) return 'gabriele';
-  if (msg.match(/\belisa\b/)) return 'elisa';
-  if (msg.match(/\bmassimo\b/)) return 'massimo';
-  if (msg.match(/\bmarzio\b/)) return 'marzio';
-  if (msg.match(/\bmarco\b/)) return 'marco';
-  if (msg.match(/\bgiacomo\b/)) return 'giacomo';
+  // Persone
+  if (msg.match(/\bluca\b/)) topics.push('luca');
+  if (msg.match(/\bdebora\b/)) topics.push('debora');
+  if (msg.match(/\bpaolo\b/)) topics.push('paolo');
+  if (msg.match(/\bsilvio\b/)) topics.push('silvio');
+  if (msg.match(/\bgabriele\b/)) topics.push('gabriele');
+  if (msg.match(/\belisa\b/)) topics.push('elisa');
+  if (msg.match(/\bmassimo\b/)) topics.push('massimo');
+  if (msg.match(/\bmarzio\b/)) topics.push('marzio');
+  if (msg.match(/\bmarco\b/)) topics.push('marco');
+  if (msg.match(/\bgiacomo\b/)) topics.push('giacomo');
   
-  if (msg.match(/coste|frazione/)) return 'coste';
-  if (msg.match(/trevi|città|ottobre trevano/)) return 'trevi';
+  // Luoghi
+  if (msg.match(/coste|frazione/)) topics.push('coste');
+  if (msg.match(/trevi|città|ottobre trevano/)) topics.push('trevi');
   
-  if (msg.match(/miele|api|fiori|honey|bee/)) return 'miele';
-  if (msg.match(/noci|noce|piante|walnut|nut/)) return 'noci';
-  if (msg.match(/olio|olive|uliv|frantoio|moraiolo|spremitura|raccolta|oil/)) return 'olio';
-  if (msg.match(/Chiara|matrimonio|amore|sentimento|Chiarina|anniversario/)) return 'Chiara';
-  if (msg.match(/pecor|formag|ricott|latte|caseificio|lacaune|ovini|caglio|sheep|cheese/)) return 'pecore';
+  // Prodotti
+  if (msg.match(/miele|api|fiori|honey|bee/)) topics.push('miele');
+  if (msg.match(/noci|noce|piante|walnut|nut/)) topics.push('noci');
+  if (msg.match(/olio|olive|uliv|frantoio|moraiolo|spremitura|raccolta|oil/)) topics.push('olio');
+  if (msg.match(/Chiara|chiara|matrimonio|amore|sentimento|Chiarina|anniversario|moglie/)) topics.push('Chiara');
+  if (msg.match(/pecor|formag|ricott|latte|caseificio|lacaune|ovini|caglio|sheep|cheese/)) topics.push('pecore');
   
-  if (msg.match(/negozio|bottega|punto vendita|comprare|acquistare|vendita|shop|store|buy/)) return 'negozio';
+  // Altro
+  if (msg.match(/negozio|bottega|punto vendita|comprare|acquistare|vendita|shop|store|buy/)) topics.push('negozio');
+  if (msg.match(/famigli|figli|nipoti|family/)) topics.push('famiglia');
+  if (msg.match(/aziend|dove|storia|cani|sito|web|farm|company|where/)) topics.push('azienda');
   
-  if (msg.match(/famigli|figli|nipoti|moglie|chiara|family/)) return 'famiglia';
-  if (msg.match(/aziend|dove|storia|cani|sito|web|farm|company|where/)) return 'azienda';
+  // Se non trova nessun topic specifico, usa 'generale'
+  return topics.length > 0 ? topics : ['generale'];
+};
+
+// 🔗 Combina più prompt templates in uno
+const combinePrompts = (topics) => {
+  if (topics.length === 1) {
+    return promptTemplates[topics[0]];
+  }
   
-  return 'generale';
+  // Combina tutti i prompt dei topic rilevati
+  const combinedPrompt = topics
+    .map(topic => promptTemplates[topic])
+    .filter(Boolean) // Rimuove eventuali undefined
+    .join('\n\n');
+  
+  return combinedPrompt || promptTemplates['generale'];
 };
 
 app.post("/chat", async (req, res) => {
@@ -300,11 +320,15 @@ app.post("/chat", async (req, res) => {
     return;
   }
 
-  const topic = detectTopic(userMessage);
-  const systemPrompt = promptTemplates[topic];
+  // 🎯 Rileva TUTTI i topic nella domanda
+  const topics = detectTopics(userMessage);
+  const systemPrompt = combinePrompts(topics);
   
   console.log(`📩 Messaggio: "${userMessage}"`);
-  console.log(`🎯 Argomento: ${topic}`);
+  console.log(`🎯 Argomenti rilevati (${topics.length}): ${topics.join(', ')}`);
+  if (topics.length > 1) {
+    console.log(`🔗 Prompt combinato per risposta completa!`);
+  }
 
   const completion = await openai.chat.completions.create({
     model: "gpt-3.5-turbo",
