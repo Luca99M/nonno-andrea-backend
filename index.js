@@ -24,12 +24,12 @@ const generateGoogleSpeech = async (text) => {
     input: { text },
     voice: {
       languageCode: "it-IT",
-      name: "it-IT-Standard-A",
+      name: "it-IT-Wavenet-A",
     },
     audioConfig: {
       audioEncoding: "MP3",
-      pitch: -4.0,
-      speakingRate: 0.9,
+      pitch: 10.0,
+      speakingRate: 0.6,
     },
   };
 
