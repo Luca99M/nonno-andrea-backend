@@ -24,7 +24,7 @@ const generateGoogleSpeech = async (text) => {
     input: { text },
     voice: {
       languageCode: "it-IT",
-      name: "it-IT-Standard-D",
+      name: "it-IT-Standard-A",
     },
     audioConfig: {
       audioEncoding: "MP3",
