@@ -29,6 +29,9 @@ const parseGoogleCredentials = (rawValue) => {
 };
 
 // ─── Client Google TTS ───────────────────────────────────────────────────────
+const googleCredentials = parseGoogleCredentials(
+  process.env.GOOGLE_CREDENTIALS ?? process.env.GOOGLE_CREDS
+);
 const googleCredentials = parseGoogleCredentials(process.env.GOOGLE_CREDS);
 const googleTTSClient = new textToSpeech.TextToSpeechClient(
   googleCredentials ? { credentials: googleCredentials } : undefined
@@ -55,6 +58,22 @@ const generateGoogleSpeech = async (text) => {
 
   const [response] = await googleTTSClient.synthesizeSpeech(request);
   return response.audioContent.toString("base64");
+};
+
+const generateOpenAISpeech = async (text) => {
+  if (!openai) {
+    return "";
+  }
+
+  const speechResponse = await openai.audio.speech.create({
+    model: "tts-1",
+    voice: "onyx",
+    input: text,
+    format: "mp3",
+  });
+
+  const audioBuffer = Buffer.from(await speechResponse.arrayBuffer());
+  return audioBuffer.toString("base64");
 };
 
 // ─── Fake Lipsync ─────────────────────────────────────────────────────────────
@@ -433,6 +452,16 @@ JSON format: {"messages":[{"text":"tua risposta","facialExpression":"smile/sad/d
         message.audio = audioBase64;
       } catch (error) {
         console.error("⚠️ Errore Google TTS:", error.message);
+        try {
+          message.audio = await generateOpenAISpeech(message.text);
+          if (!message.audio) {
+            throw new Error("OpenAI TTS non disponibile");
+          }
+          console.log("ℹ️ Fallback audio generato con OpenAI TTS");
+        } catch (fallbackError) {
+          console.error("⚠️ Errore fallback OpenAI TTS:", fallbackError.message);
+          message.audio = "";
+        }
         message.audio = "";
         message.audio = await audioFileToBase64("audios/api_1.wav");
       }
