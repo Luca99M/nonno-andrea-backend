@@ -44,7 +44,7 @@ const generateGoogleSpeech = async (text) => {
     input: { text },
     voice: {
       languageCode: "it-IT",
-      name: "it-IT-Wavenet-A",
+      name: "it-IT-Wavenet-D",
     },
     audioConfig: {
       audioEncoding: "MP3",
@@ -433,6 +433,7 @@ JSON format: {"messages":[{"text":"tua risposta","facialExpression":"smile/sad/d
         message.audio = audioBase64;
       } catch (error) {
         console.error("⚠️ Errore Google TTS:", error.message);
+        message.audio = "";
         message.audio = await audioFileToBase64("audios/api_1.wav");
       }
 
