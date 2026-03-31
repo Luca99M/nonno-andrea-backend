@@ -44,7 +44,7 @@ const generateGoogleSpeech = async (text) => {
     input: { text },
     voice: {
       languageCode: "it-IT",
-      name: "it-IT-Wavenet-D",
+      name: "it-IT-Neural2-C",
     },
     audioConfig: {
       audioEncoding: "MP3",
