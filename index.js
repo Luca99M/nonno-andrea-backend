@@ -35,9 +35,8 @@ const googleTTSClient = new textToSpeech.TextToSpeechClient(
 );
 
 // ─── Client OpenAI ───────────────────────────────────────────────────────────
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY || "-",
-});
+const openaiApiKey = process.env.OPENAI_API_KEY?.trim();
+const openai = openaiApiKey ? new OpenAI({ apiKey: openaiApiKey }) : null;
 
 // ─── Google Text-to-Speech ───────────────────────────────────────────────────
 const generateGoogleSpeech = async (text) => {
@@ -317,7 +316,27 @@ const combinePrompts = (topics) => {
 // ─── Express App ──────────────────────────────────────────────────────────────
 const app = express();
 app.use(express.json());
-app.use(cors());
+const allowedOrigins = [
+  "https://nonno-andrea-azienda-medei.vercel.app",
+  "http://localhost:3000",
+  "http://localhost:5173",
+  ...(process.env.CORS_ORIGINS
+    ? process.env.CORS_ORIGINS.split(",").map((origin) => origin.trim()).filter(Boolean)
+    : []),
+];
+
+const corsOptions = {
+  origin: (origin, callback) => {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+      return;
+    }
+    callback(new Error(`Origin non consentita: ${origin}`));
+  },
+};
+
+app.use(cors(corsOptions));
+app.options("*", cors(corsOptions));
 const port = 3000;
 
 app.get("/", (req, res) => {
@@ -326,7 +345,8 @@ app.get("/", (req, res) => {
 
 // ─── Route Chat ───────────────────────────────────────────────────────────────
 app.post("/chat", async (req, res) => {
-  const userMessage = req.body.message;
+  try {
+    const userMessage = req.body.message;
 
   // Nessun messaggio → risposta di benvenuto
   if (!userMessage) {
@@ -345,20 +365,20 @@ app.post("/chat", async (req, res) => {
   }
 
   // Controllo API key OpenAI
-  if (openai.apiKey === "-") {
-    res.send({
-      messages: [
-        {
-          text: "C'è un problema con le API.",
-          audio: await audioFileToBase64("audios/api_0.wav"),
-          lipsync: await readJsonTranscript("audios/api_0.json"),
-          facialExpression: "sad",
-          animation: "Talking_1",
-        },
-      ],
-    });
-    return;
-  }
+    if (!openai) {
+      res.send({
+        messages: [
+          {
+            text: "C'è un problema con le API.",
+            audio: await audioFileToBase64("audios/api_0.wav"),
+            lipsync: await readJsonTranscript("audios/api_0.json"),
+            facialExpression: "sad",
+            animation: "Talking_1",
+          },
+        ],
+      });
+      return;
+    }
 
   // Rilevamento topic e composizione prompt
   const topics = detectTopics(userMessage);
@@ -371,7 +391,7 @@ app.post("/chat", async (req, res) => {
   }
 
   // Chiamata OpenAI
-  const completion = await openai.chat.completions.create({
+    const completion = await openai.chat.completions.create({
     model: "gpt-3.5-turbo",
     max_tokens: 150,
     temperature: 1.2,
@@ -396,26 +416,45 @@ JSON format: {"messages":[{"text":"tua risposta","facialExpression":"smile/sad/d
     ],
   });
 
-  let messages = JSON.parse(completion.choices[0].message.content);
-  if (messages.messages) {
-    messages = messages.messages;
-  }
-  messages = messages.slice(0, 1);
+    let messages = JSON.parse(completion.choices[0].message.content);
+    if (messages.messages) {
+      messages = messages.messages;
+    }
+    messages = messages.slice(0, 1);
 
-  console.log(`🤖 Risposta: "${messages[0].text}"`);
+    console.log(`🤖 Risposta: "${messages[0].text}"`);
 
   // Generazione audio con Google TTS + lipsync
-  for (let i = 0; i < messages.length; i++) {
-    const message = messages[i];
+    for (let i = 0; i < messages.length; i++) {
+      const message = messages[i];
 
-    const audioBase64 = await generateGoogleSpeech(message.text);
-    await generateFakeLipsync(i);
+      try {
+        const audioBase64 = await generateGoogleSpeech(message.text);
+        message.audio = audioBase64;
+      } catch (error) {
+        console.error("⚠️ Errore Google TTS:", error.message);
+        message.audio = await audioFileToBase64("audios/api_1.wav");
+      }
 
-    message.audio = audioBase64;
-    message.lipsync = await readJsonTranscript(`audios/message_${i}.json`);
+      await generateFakeLipsync(i);
+      message.lipsync = await readJsonTranscript(`audios/message_${i}.json`);
+    }
+
+    res.send({ messages });
+  } catch (error) {
+    console.error("❌ Errore /chat:", error);
+    res.status(500).send({
+      messages: [
+        {
+          text: "Scusami, c'è stato un problema tecnico. Riprova tra poco.",
+          audio: "",
+          lipsync: { metadata: { duration: 0 }, mouthCues: [] },
+          facialExpression: "sad",
+          animation: "Standing Idle",
+        },
+      ],
+    });
   }
-
-  res.send({ messages });
 });
 
 // ─── Utility ──────────────────────────────────────────────────────────────────
