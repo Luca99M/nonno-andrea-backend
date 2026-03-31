@@ -8,10 +8,31 @@ dotenv.config();
 
 import textToSpeech from "@google-cloud/text-to-speech";
 
+const parseGoogleCredentials = (rawValue) => {
+  if (!rawValue) {
+    return null;
+  }
+
+  const trimmedValue = rawValue.trim();
+  try {
+    return JSON.parse(trimmedValue);
+  } catch {
+    try {
+      const decodedValue = Buffer.from(trimmedValue, "base64").toString("utf8");
+      return JSON.parse(decodedValue);
+    } catch {
+      throw new Error(
+        "GOOGLE_CREDS non è un JSON valido (né testo diretto né base64)."
+      );
+    }
+  }
+};
+
 // ─── Client Google TTS ───────────────────────────────────────────────────────
-const googleTTSClient = new textToSpeech.TextToSpeechClient({
-  credentials: JSON.parse(process.env.GOOGLE_CREDS),
-});
+const googleCredentials = parseGoogleCredentials(process.env.GOOGLE_CREDS);
+const googleTTSClient = new textToSpeech.TextToSpeechClient(
+  googleCredentials ? { credentials: googleCredentials } : undefined
+);
 
 // ─── Client OpenAI ───────────────────────────────────────────────────────────
 const openai = new OpenAI({
