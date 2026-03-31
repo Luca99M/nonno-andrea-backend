@@ -32,6 +32,7 @@ const parseGoogleCredentials = (rawValue) => {
 const googleCredentials = parseGoogleCredentials(
   process.env.GOOGLE_CREDENTIALS ?? process.env.GOOGLE_CREDS
 );
+const googleCredentials = parseGoogleCredentials(process.env.GOOGLE_CREDS);
 const googleTTSClient = new textToSpeech.TextToSpeechClient(
   googleCredentials ? { credentials: googleCredentials } : undefined
 );
@@ -461,6 +462,8 @@ JSON format: {"messages":[{"text":"tua risposta","facialExpression":"smile/sad/d
           console.error("⚠️ Errore fallback OpenAI TTS:", fallbackError.message);
           message.audio = "";
         }
+        message.audio = "";
+        message.audio = await audioFileToBase64("audios/api_1.wav");
       }
 
       await generateFakeLipsync(i);
