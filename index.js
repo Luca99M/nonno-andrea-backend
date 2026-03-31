@@ -434,6 +434,7 @@ JSON format: {"messages":[{"text":"tua risposta","facialExpression":"smile/sad/d
       } catch (error) {
         console.error("⚠️ Errore Google TTS:", error.message);
         message.audio = "";
+        message.audio = await audioFileToBase64("audios/api_1.wav");
       }
 
       await generateFakeLipsync(i);
